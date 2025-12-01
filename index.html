@@ -113,7 +113,6 @@
       <video id="360video2" src="assets/FromSalkAnnex360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
       <video id="360video3" src="assets/RecCenterSalk360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
       <video id="360video4" src="assets/ScaifeInterior360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-
     </a-assets>
 
     <a-videosphere src="#360video1"></a-videosphere>
@@ -142,38 +141,56 @@
 
   </a-scene>
 
+<div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
+  <button onclick="switchVideo('360video1')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
+  <button onclick="switchVideo('360video2')" style="padding: 8px 15px; cursor: pointer;">Salk Annex</button>
+  <button onclick="switchVideo('360video3')" style="padding: 8px 15px; cursor: pointer;">Rec Center</button>
+  <button onclick="switchVideo('360video4')" style="padding: 8px 15px; cursor: pointer;">Scaife Interior</button>
+</div>
+
 <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
-  
   <button onclick="toggleFilter('none')" style="padding: 8px 15px; cursor: pointer;">Normal</button>
   <button onclick="toggleFilter('macular')" style="padding: 8px 15px; cursor: pointer;">Macular</button>
   <button onclick="toggleFilter('cataract')" style="padding: 8px 15px; cursor: pointer;">Cataracts</button>
   <button onclick="toggleFilter('glaucoma')" style="padding: 8px 15px; cursor: pointer;">Glaucoma</button>
   <button onclick="toggleFilter('retinopathy')" style="padding: 8px 15px; cursor: pointer;">Retinopathy</button>
-
 </div>
 
 <script>
+  // EXISTING: Filter Toggle Logic
   function toggleFilter(type) {
-    // 1. List all filter IDs
     const filters = ['macular', 'cataract', 'glaucoma', 'retinopathy'];
-
-    // 2. Turn EVERY filter OFF first
     filters.forEach(f => {
       document.querySelector('#filter-' + f).setAttribute('material', 'opacity', 0.0);
     });
 
-    // 3. Turn ON the one we clicked (if it's not 'none')
     if (type !== 'none') {
       const activeFilter = document.querySelector('#filter-' + type);
-      
-      // Set specific intensities for each disease for best effect
       if (type === 'macular') activeFilter.setAttribute('material', 'opacity', 1.0);
       if (type === 'cataract') activeFilter.setAttribute('material', 'opacity', 0.9);
       if (type === 'glaucoma') activeFilter.setAttribute('material', 'opacity', 1.0);
       if (type === 'retinopathy') activeFilter.setAttribute('material', 'opacity', 1.0);
     }
-    
     console.log("Switched filter to:", type);
+  }
+
+  // NEW: Video Switching Logic
+  function switchVideo(videoId) {
+    var videosphere = document.querySelector('a-videosphere');
+    var newVideo = document.getElementById(videoId);
+
+    // Pause all videos first
+    document.querySelectorAll('video').forEach(v => v.pause());
+
+    // Swap the source
+    videosphere.setAttribute('src', '#' + videoId);
+
+    // Play the new video
+    if (newVideo) {
+      newVideo.currentTime = 0;
+      newVideo.play().catch(e => console.log("Play error (interaction likely needed):", e));
+    }
+    console.log("Switched video to:", videoId);
   }
 </script>
 
