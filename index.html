@@ -76,7 +76,6 @@
         if (opacity < 0.01) discard;
         float dist = distance(vUv, vec2(0.5));
         // Create the tunnel: Clear until 0.15, then fade to black by 0.35
-        // We invert smoothstep because we want the CENTER clear (0.0) and edges black (1.0)
         float vignette = smoothstep(0.15, 0.35, dist);
         gl_FragColor = vec4(0.0, 0.0, 0.0, vignette * opacity);
       }
@@ -89,25 +88,15 @@
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `
       varying vec2 vUv; uniform float opacity;
-      // A pseudo-random function to generate static noise
       float random(vec2 st) {
           return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
       }
       void main() {
         if (opacity < 0.01) discard;
-        
-        // Divide the screen into a grid to create scattered spots
-        vec2 grid = vUv * 30.0; // 30x30 grid
+        vec2 grid = vUv * 30.0; 
         vec2 ipos = floor(grid);
-        
-        // Get a random number for this grid cell
         float noise = random(ipos);
-        
-        // Only draw a spot if the random number is very high (> 0.92)
-        // This makes the spots sparse (floaters) rather than a solid wall
         float spots = step(0.92, noise);
-        
-        // Make the spots semi-transparent dark red/black
         gl_FragColor = vec4(0.1, 0.0, 0.0, spots * opacity);
       }
     `
@@ -120,13 +109,14 @@
 <body>
   <a-scene physics="driver: local" shadow="type: pcfsoft" play-on-click>
     <a-assets>
-      <img id="sky" src="assets/comfysky.png">
-      <img id="testeye" src="assets/testeye.png">
-      <video id="360video" src="assets/MedEdDay360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="fireplace" src="assets/Fireplace720.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video1" src="assets/ForbesAveCrosswalk360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video2" src="assets/FromSalkAnnex360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video3" src="assets/RecCenterSalk360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video4" src="assets/ScaifeInterior360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+
     </a-assets>
 
-    <a-videosphere src="#360video"></a-videosphere>
+    <a-videosphere src="#360video1"></a-videosphere>
 
     <a-entity id="playerRig" position="0 0 0" kinematic-body="radius: 0.5" wasd-controls>
       <a-camera id="playerCamera" position="0 2 0" look-controls>
