@@ -17,14 +17,13 @@
         sceneEl.addEventListener('loaded', () => {
           console.log("Scene loaded, waiting for user click...");
           window.addEventListener('click', () => {
-            const vids = document.querySelectorAll('video');
-            vids.forEach((v) => {
-              if (v.paused) {
-                v.play()
-                  .then(() => console.log(`${v.id} is playing`))
-                  .catch((e) => console.warn(`${v.id} play failed:`, e));
-              }
-            });
+            // FIX: Only play the FIRST video to save mobile memory/decoders
+            const v1 = document.querySelector('#360video1');
+            if (v1 && v1.paused) {
+              v1.play()
+                .then(() => console.log("Video 1 started"))
+                .catch((e) => console.warn("Video 1 failed:", e));
+            }
           }, { once: true });
         });
       }
@@ -32,7 +31,8 @@
   </script>
 
 <script>
-  // 1. MACULAR DEGENERATION (Central Irregular Blob)
+  // SHADERS (Unchanged)
+  // 1. MACULAR DEGENERATION
   AFRAME.registerShader('macular-shader', {
     schema: { time: {type: 'time', is: 'uniform'}, opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -53,7 +53,7 @@
     `
   });
 
-  // 2. CATARACTS (Milky Haze)
+  // 2. CATARACTS
   AFRAME.registerShader('cataract-shader', {
     schema: { opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -66,7 +66,7 @@
     `
   });
 
-  // 3. GLAUCOMA (Tunnel Vision)
+  // 3. GLAUCOMA
   AFRAME.registerShader('glaucoma-shader', {
     schema: { opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -75,14 +75,13 @@
       void main() {
         if (opacity < 0.01) discard;
         float dist = distance(vUv, vec2(0.5));
-        // Create the tunnel: Clear until 0.15, then fade to black by 0.35
         float vignette = smoothstep(0.15, 0.35, dist);
         gl_FragColor = vec4(0.0, 0.0, 0.0, vignette * opacity);
       }
     `
   });
 
-  // 4. DIABETIC RETINOPATHY (Random Floaters/Spots)
+  // 4. DIABETIC RETINOPATHY
   AFRAME.registerShader('retinopathy-shader', {
     schema: { opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -103,16 +102,15 @@
   });
 </script>
 
-
 </head>
 
 <body>
   <a-scene physics="driver: local" shadow="type: pcfsoft" play-on-click>
     <a-assets>
-      <video id="360video1" src="assets/Forbesavecrosswalk360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="360video2" src="assets/Fromsalkannex360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="360video3" src="assets/Reccenterpete360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="360video4" src="assets/Scaifeinterior2_360.mp4" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video1" src="assets/Forbesavecrosswalk360.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video2" src="assets/Fromsalkannex360.mp4"      preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video3" src="assets/Reccenterpete360.mp4"      preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="360video4" src="assets/Scaifeinterior2_360.mp4"     preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
     </a-assets>
 
     <a-videosphere src="#360video1"></a-videosphere>
@@ -123,13 +121,10 @@
 
         <a-entity id="filter-macular" geometry="primitive: plane; height: 2; width: 2" position="0 0 -0.2"
           material="shader: macular-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
-
         <a-entity id="filter-cataract" geometry="primitive: plane; height: 2; width: 2" position="0 0 -0.2"
           material="shader: cataract-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
-          
         <a-entity id="filter-glaucoma" geometry="primitive: plane; height: 2; width: 2" position="0 0 -0.2"
           material="shader: glaucoma-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
-
         <a-entity id="filter-retinopathy" geometry="primitive: plane; height: 2; width: 2" position="0 0 -0.2"
           material="shader: retinopathy-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
       </a-camera>
@@ -138,7 +133,6 @@
     <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#7BC8A4" shadow="receive: true" static-body opacity="0"></a-plane>
     <a-light type="ambient" color="#888"></a-light>
     <a-light type="directional" position="-1 1 0.5" intensity="0.6" shadow="cast: true"></a-light>
-
   </a-scene>
 
 <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
@@ -157,7 +151,7 @@
 </div>
 
 <script>
-  // EXISTING: Filter Toggle Logic
+  // Filter Toggle Logic
   function toggleFilter(type) {
     const filters = ['macular', 'cataract', 'glaucoma', 'retinopathy'];
     filters.forEach(f => {
@@ -171,24 +165,23 @@
       if (type === 'glaucoma') activeFilter.setAttribute('material', 'opacity', 1.0);
       if (type === 'retinopathy') activeFilter.setAttribute('material', 'opacity', 1.0);
     }
-    console.log("Switched filter to:", type);
   }
 
-  // NEW: Video Switching Logic
+  // NEW Video Switching Logic
   function switchVideo(videoId) {
     var videosphere = document.querySelector('a-videosphere');
     var newVideo = document.getElementById(videoId);
 
-    // Pause all videos first
+    // 1. Pause all videos
     document.querySelectorAll('video').forEach(v => v.pause());
 
-    // Swap the source
+    // 2. Swap the source
     videosphere.setAttribute('src', '#' + videoId);
 
-    // Play the new video
+    // 3. Play the new video (Allowed because this function is triggered by a button CLICK)
     if (newVideo) {
       newVideo.currentTime = 0;
-      newVideo.play().catch(e => console.log("Play error (interaction likely needed):", e));
+      newVideo.play().catch(e => console.log("Play error:", e));
     }
     console.log("Switched video to:", videoId);
   }
