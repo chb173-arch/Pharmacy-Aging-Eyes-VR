@@ -103,9 +103,11 @@
 <body>
   <a-scene shadow="type: pcfsoft" play-on-click>
     <a-assets>
-      <video id="mainVideoPlayer" src="assets/ForbesAveCrosswalk360.mp4" 
+      <video id="mainVideoPlayer" src="assets/Forbesavecrosswalk360.mp4" 
              preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous">
       </video>
+    <img id="skybox" src="assets/ComfyUI_skybox.png">
+      <a-sky src="#skybox" ></a-sky>
     </a-assets>
 
     <a-videosphere src="#mainVideoPlayer"></a-videosphere>
@@ -131,7 +133,7 @@
   </a-scene>
 
 <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
-  <button onclick="switchVideo('ForbesAveCrosswalk360.mp4')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
+  <button onclick="switchVideo('Forbesavecrosswalk360')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
   <button onclick="switchVideo('SalkToScaife.mp4')"          style="padding: 8px 15px; cursor: pointer;">Salk to Scaife</button>
   <button onclick="switchVideo('RecCenterToAnnex.mp4')"      style="padding: 8px 15px; cursor: pointer;">Terrace Street</button>
   <button onclick="switchVideo('ScaifeInterior.mp4')"        style="padding: 8px 15px; cursor: pointer;">Scaife Hall</button>
