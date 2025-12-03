@@ -18,12 +18,11 @@
         sceneEl.addEventListener('loaded', () => {
           console.log("Scene loaded, waiting for user click...");
           window.addEventListener('click', () => {
-            const v1 = document.querySelector('#mainVideoPlayer');
-            if (v1 && v1.paused) {
-              v1.play()
-                .then(() => console.log("Video started"))
-                .catch((e) => console.warn("Video failed:", e));
-            }
+            
+            // FIX PART 1: We load Video 1 manually here, treating it just like the others.
+            // This prevents the "switch back" freeze.
+            switchVideo('ForbesAveCrosswalk360.mp4');
+
           }, { once: true });
         });
       }
@@ -103,11 +102,9 @@
 <body>
   <a-scene shadow="type: pcfsoft" play-on-click>
     <a-assets>
-      <video id="mainVideoPlayer" src="assets/Forbesavecrosswalk360.mp4" 
+      <video id="mainVideoPlayer" 
              preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous">
       </video>
-    <img id="skybox" src="assets/ComfyUI_skybox.png">
-      <a-sky src="#skybox" ></a-sky>
     </a-assets>
 
     <a-videosphere src="#mainVideoPlayer"></a-videosphere>
@@ -133,10 +130,10 @@
   </a-scene>
 
 <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
-  <button onclick="switchVideo('Forbesavecrosswalk360')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
-  <button onclick="switchVideo('SalkToScaife.mp4')"          style="padding: 8px 15px; cursor: pointer;">Salk to Scaife</button>
-  <button onclick="switchVideo('RecCenterToAnnex.mp4')"      style="padding: 8px 15px; cursor: pointer;">Terrace Street</button>
-  <button onclick="switchVideo('ScaifeInterior.mp4')"        style="padding: 8px 15px; cursor: pointer;">Scaife Hall</button>
+  <button onclick="switchVideo('ForbesAveCrosswalk360.mp4')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
+  <button onclick="switchVideo('FromSalkAnnex360.mp4')"      style="padding: 8px 15px; cursor: pointer;">Salk Annex</button>
+  <button onclick="switchVideo('RecCenterSalk360.mp4')"      style="padding: 8px 15px; cursor: pointer;">Rec Center</button>
+  <button onclick="switchVideo('ScaifeInterior360.mp4')"     style="padding: 8px 15px; cursor: pointer;">Scaife Interior</button>
 </div>
 
 <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
@@ -165,10 +162,22 @@
 
   function switchVideo(filename) {
     var player = document.getElementById('mainVideoPlayer');
+    
+    // FIX 3: Robust Buffer Flushing
     player.pause();
-    player.setAttribute('src', 'assets/' + filename);
-    player.load(); 
+    
+    // Clear the source completely to dump the decoder state
+    player.removeAttribute('src'); 
+    player.load();
+
+    // Set the new source
+    player.src = 'assets/' + filename;
+    
+    // Reset time and play
+    player.currentTime = 0;
+    player.load(); // Fetch the new file
     player.play().catch(e => console.log("Play error:", e));
+    
     console.log("Switched video to:", filename);
   }
 </script>
