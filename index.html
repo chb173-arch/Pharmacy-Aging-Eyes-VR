@@ -17,12 +17,11 @@
         sceneEl.addEventListener('loaded', () => {
           console.log("Scene loaded, waiting for user click...");
           window.addEventListener('click', () => {
-            // FIX: Only play the FIRST video to save mobile memory/decoders
-            const v1 = document.querySelector('#360video1');
+            const v1 = document.querySelector('#mainVideoPlayer');
             if (v1 && v1.paused) {
               v1.play()
-                .then(() => console.log("Video 1 started"))
-                .catch((e) => console.warn("Video 1 failed:", e));
+                .then(() => console.log("Video started"))
+                .catch((e) => console.warn("Video failed:", e));
             }
           }, { once: true });
         });
@@ -32,7 +31,6 @@
 
 <script>
   // SHADERS (Unchanged)
-  // 1. MACULAR DEGENERATION
   AFRAME.registerShader('macular-shader', {
     schema: { time: {type: 'time', is: 'uniform'}, opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -53,7 +51,6 @@
     `
   });
 
-  // 2. CATARACTS
   AFRAME.registerShader('cataract-shader', {
     schema: { opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -66,7 +63,6 @@
     `
   });
 
-  // 3. GLAUCOMA
   AFRAME.registerShader('glaucoma-shader', {
     schema: { opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -81,7 +77,6 @@
     `
   });
 
-  // 4. DIABETIC RETINOPATHY
   AFRAME.registerShader('retinopathy-shader', {
     schema: { opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -107,13 +102,12 @@
 <body>
   <a-scene physics="driver: local" shadow="type: pcfsoft" play-on-click>
     <a-assets>
-      <video id="360video1" src="assets/Forbesavecrosswalk360.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="360video2" src="assets/Fromsalkannex360.mp4"      preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="360video3" src="assets/Reccenterpete360.mp4"      preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-      <video id="360video4" src="assets/Scaifeinterior2_360.mp4"     preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+      <video id="mainVideoPlayer" src="assets/ForbesAveCrosswalk360.mp4" 
+             preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous">
+      </video>
     </a-assets>
 
-    <a-videosphere src="#360video1"></a-videosphere>
+    <a-videosphere src="#mainVideoPlayer"></a-videosphere>
 
     <a-entity id="playerRig" position="0 0 0" kinematic-body="radius: 0.5" wasd-controls>
       <a-camera id="playerCamera" position="0 2 0" look-controls>
@@ -136,10 +130,10 @@
   </a-scene>
 
 <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
-  <button onclick="switchVideo('360video1')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
-  <button onclick="switchVideo('360video2')" style="padding: 8px 15px; cursor: pointer;">Salk Annex</button>
-  <button onclick="switchVideo('360video3')" style="padding: 8px 15px; cursor: pointer;">Rec Center</button>
-  <button onclick="switchVideo('360video4')" style="padding: 8px 15px; cursor: pointer;">Scaife Interior</button>
+  <button onclick="switchVideo('ForbesAveCrosswalk360.mp4')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
+  <button onclick="switchVideo('FromSalkAnnex360.mp4')"      style="padding: 8px 15px; cursor: pointer;">Salk Annex</button>
+  <button onclick="switchVideo('RecCenterSalk360.mp4')"      style="padding: 8px 15px; cursor: pointer;">Rec Center</button>
+  <button onclick="switchVideo('ScaifeInterior360.mp4')"     style="padding: 8px 15px; cursor: pointer;">Scaife Interior</button>
 </div>
 
 <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
@@ -167,23 +161,21 @@
     }
   }
 
-  // NEW Video Switching Logic
-  function switchVideo(videoId) {
-    var videosphere = document.querySelector('a-videosphere');
-    var newVideo = document.getElementById(videoId);
+  // NEW Video Switching Logic (SINGLE PLAYER)
+  function switchVideo(filename) {
+    var player = document.getElementById('mainVideoPlayer');
 
-    // 1. Pause all videos
-    document.querySelectorAll('video').forEach(v => v.pause());
+    // 1. Pause
+    player.pause();
 
-    // 2. Swap the source
-    videosphere.setAttribute('src', '#' + videoId);
+    // 2. Change the physical file source
+    player.setAttribute('src', 'assets/' + filename);
 
-    // 3. Play the new video (Allowed because this function is triggered by a button CLICK)
-    if (newVideo) {
-      newVideo.currentTime = 0;
-      newVideo.play().catch(e => console.log("Play error:", e));
-    }
-    console.log("Switched video to:", videoId);
+    // 3. Load and Play
+    player.load(); // Important to tell the browser to fetch the new file
+    player.play().catch(e => console.log("Play error:", e));
+    
+    console.log("Switched video to:", filename);
   }
 </script>
 
