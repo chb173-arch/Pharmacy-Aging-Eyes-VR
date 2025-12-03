@@ -8,7 +8,6 @@
   <title>Aging Sensitivity</title>
   <meta name="description" content="Aging-related eye disorders">
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-  
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
 
   <script>
@@ -18,11 +17,13 @@
         sceneEl.addEventListener('loaded', () => {
           console.log("Scene loaded, waiting for user click...");
           window.addEventListener('click', () => {
-            
-            // FIX PART 1: We load Video 1 manually here, treating it just like the others.
-            // This prevents the "switch back" freeze.
-            switchVideo('ForbesAveCrosswalk360.mp4');
-
+            const v1 = document.querySelector('#mainVideoPlayer');
+            if (v1 && v1.paused) {
+              // Just play the video that is already loaded
+              v1.play()
+                .then(() => console.log("Video started"))
+                .catch((e) => console.warn("Video failed:", e));
+            }
           }, { once: true });
         });
       }
@@ -30,7 +31,7 @@
   </script>
 
 <script>
-  // SHADERS (Unchanged)
+  // SHADERS (Macular, Cataract, Glaucoma)
   AFRAME.registerShader('macular-shader', {
     schema: { time: {type: 'time', is: 'uniform'}, opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -58,7 +59,7 @@
       uniform float opacity;
       void main() {
         if (opacity < 0.01) discard;
-        gl_FragColor = vec4(0.85, 0.75, 0.45, opacity); 
+        gl_FragColor = vec4(1.0, 0.98, 0.9, opacity); 
       }
     `
   });
@@ -71,71 +72,11 @@
       void main() {
         if (opacity < 0.01) discard;
         float dist = distance(vUv, vec2(0.5));
-        float vignette = smoothstep(0.0001, 0.19, dist);
+        float vignette = smoothstep(0.015, 0.35, dist);
         gl_FragColor = vec4(0.0, 0.0, 0.0, vignette * opacity);
       }
     `
   });
-
-// 4. DIABETIC RETINOPATHY (Irregular Blobs / Clumps)
-  AFRAME.registerShader('retinopathy-shader', {
-    schema: { 
-      opacity: {type: 'number', is: 'uniform', default: 0.0}
-    },
-    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `
-      varying vec2 vUv; 
-      uniform float opacity;
-
-      // Simple Noise Function
-      float hash(vec2 p) { return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x)))); }
-      float noise(vec2 x) {
-        vec2 i = floor(x);
-        vec2 f = fract(x);
-        float a = hash(i);
-        float b = hash(i + vec2(1.0, 0.0));
-        float c = hash(i + vec2(0.0, 1.0));
-        float d = hash(i + vec2(1.0, 1.0));
-        vec2 u = f * f * (3.0 - 2.0 * f);
-        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-      }
-
-      void main() {
-        if (opacity < 0.01) discard;
-
-        // 1. SCALE (Higher = smaller, more frequent blobs)
-        vec2 st = vUv * 6.0;
-
-        // 2. DISTORTION (Make the shapes irregular/wobbly)
-        float distort = noise(st * 0.5);
-        st.x += distort * 0.5;
-        st.y += distort * 0.5;
-
-        // 3. GENERATE BLOBS
-        // We calculate noise, then only keep the "peaks" (values above 0.6)
-        // This creates isolated islands/shapes.
-        float n = noise(st * 2.5);
-        
-        // 0.6 is the threshold. 
-        // Lower (0.5) = Bigger blobs. Higher (0.7) = Tiny specks.
-        float blobs = smoothstep(0.6, 0.85, n); 
-
-        // 4. SPARSITY MASK (Keep them near the center, fade edges)
-        float distFromCenter = distance(vUv, vec2(0.5));
-        float centerMask = 1.0 - smoothstep(0.1, 0.5, distFromCenter);
-
-        // 5. REMOVE RANDOM CLUMPS
-        // Delete 30% of the blobs randomly so it's not too uniform
-        float randomDelete = step(0.3, noise(vUv * 10.0));
-
-        float finalShape = blobs * centerMask * randomDelete;
-
-        // Dark Blood Red / Blackish Color
-        gl_FragColor = vec4(0.2, 0.0, 0.0, finalShape * opacity);
-      }
-    `
-  });
-
 </script>
 
 </head>
@@ -143,9 +84,11 @@
 <body>
   <a-scene shadow="type: pcfsoft" play-on-click>
     <a-assets>
-      <video id="mainVideoPlayer" 
+      <video id="mainVideoPlayer" src="assets/ForbesAveCrosswalk360.mp4" 
              preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous">
       </video>
+
+      <img id="retinopathy-img" src="assets/retinopathy.png">
     </a-assets>
 
     <a-videosphere src="#mainVideoPlayer"></a-videosphere>
@@ -154,14 +97,22 @@
       <a-camera id="playerCamera" position="0 2 0" look-controls>
         <a-cursor raycaster="objects: [data-clickable]"></a-cursor>
 
-        <a-entity id="filter-macular" geometry="primitive: plane; height: 2; width: 2" position="0 0 -0.2"
+        <a-entity id="filter-macular" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.025"
           material="shader: macular-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
-        <a-entity id="filter-cataract" geometry="primitive: plane; height: 2; width: 2" position="0 0 -0.2"
+        <a-entity id="filter-cataract" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.1"
           material="shader: cataract-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
         <a-entity id="filter-glaucoma" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.1"
           material="shader: glaucoma-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
-        <a-entity id="filter-retinopathy" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.2"
-          material="shader: retinopathy-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
+
+        <a-plane id="filter-retinopathy" 
+                 src="#retinopathy-img"
+                 position="0 0 -0.1" 
+                 height="0.4" width="0.4"
+                 transparent="true"
+                 depthTest="false"
+                 opacity="0">
+        </a-plane>
+
       </a-camera>
     </a-entity>
 
@@ -194,29 +145,27 @@
 
     if (type !== 'none') {
       const activeFilter = document.querySelector('#filter-' + type);
-      if (type === 'macular') activeFilter.setAttribute('material', 'opacity', 1.0);
+      // Set Opacity to 1.0 (Visibile) for the selected filter
+      if (activeFilter) activeFilter.setAttribute('material', 'opacity', 1.0);
+      
+      // Keep your custom opacity tweaks if you want them:
       if (type === 'cataract') activeFilter.setAttribute('material', 'opacity', 0.9);
-      if (type === 'glaucoma') activeFilter.setAttribute('material', 'opacity', 1.0);
-      if (type === 'retinopathy') activeFilter.setAttribute('material', 'opacity', 1.0);
     }
   }
 
   function switchVideo(filename) {
     var player = document.getElementById('mainVideoPlayer');
     
-    // FIX 3: Robust Buffer Flushing
-    player.pause();
-    
-    // Clear the source completely to dump the decoder state
-    player.removeAttribute('src'); 
-    player.load();
+    // Check if we are already playing this video to avoid reset
+    if (player.src.includes(filename)) {
+        if (player.paused) player.play();
+        return; 
+    }
 
-    // Set the new source
+    // Standard Switch Logic
+    player.pause();
     player.src = 'assets/' + filename;
-    
-    // Reset time and play
-    player.currentTime = 0;
-    player.load(); // Fetch the new file
+    player.load(); 
     player.play().catch(e => console.log("Play error:", e));
     
     console.log("Switched video to:", filename);
