@@ -59,7 +59,7 @@
       uniform float opacity;
       void main() {
         if (opacity < 0.01) discard;
-        gl_FragColor = vec4(1.0, 0.98, 0.9, opacity); 
+        gl_FragColor = vec4(0.25, 0.2, 0.12, opacity); 
       }
     `
   });
@@ -72,7 +72,7 @@
       void main() {
         if (opacity < 0.01) discard;
         float dist = distance(vUv, vec2(0.5));
-        float vignette = smoothstep(0.015, 0.35, dist);
+        float vignette = smoothstep(0.01, 0.35, dist);
         gl_FragColor = vec4(0.0, 0.0, 0.0, vignette * opacity);
       }
     `
@@ -97,7 +97,7 @@
       <a-camera id="playerCamera" position="0 2 0" look-controls>
         <a-cursor raycaster="objects: [data-clickable]"></a-cursor>
 
-        <a-entity id="filter-macular" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.025"
+        <a-entity id="filter-macular" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.1"
           material="shader: macular-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
         <a-entity id="filter-cataract" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.1"
           material="shader: cataract-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
