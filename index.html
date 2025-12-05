@@ -44,7 +44,7 @@
         float angle = atan(p.y, p.x);
         float radius = length(p);
         float warp = sin(angle * 3.0) * 0.005 + sin(angle * 7.0 + 1.5) * 0.003 + sin(angle * 12.0) * 0.002;
-        float blobRadius = 0.025 + warp; 
+        float blobRadius = 0.055 + warp; 
         float alpha = 1.0 - smoothstep(blobRadius, blobRadius + 0.035, radius);
         float noise = rand(vUv * 100.0) * 0.15; 
         gl_FragColor = vec4(0.0, 0.0, 0.0, (alpha + (noise * alpha)) * opacity);
@@ -59,7 +59,7 @@
       uniform float opacity;
       void main() {
         if (opacity < 0.01) discard;
-        gl_FragColor = vec4(0.25, 0.2, 0.12, opacity); 
+        gl_FragColor = vec4(0.95, 0.75, 0.32, 0.87); 
       }
     `
   });
@@ -72,7 +72,7 @@
       void main() {
         if (opacity < 0.01) discard;
         float dist = distance(vUv, vec2(0.5));
-        float vignette = smoothstep(0.01, 0.35, dist);
+        float vignette = smoothstep(0.001, 0.27, dist);
         gl_FragColor = vec4(0.0, 0.0, 0.0, vignette * opacity);
       }
     `
