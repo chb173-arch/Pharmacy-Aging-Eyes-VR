@@ -1,16 +1,14 @@
- <!--Run in project directory for localhost:8000 ... [python -m http.server]--> 
- <!--SAVE AS and RENAME this template "index.html"-->
- <!--project directory should have index.html and "assets" folder-->
-
 <!DOCTYPE html>
 <html>
 <head>
   <title>Aging Sensitivity</title>
   <meta name="description" content="Aging-related eye disorders">
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
 
   <script>
+    // COMPONENT 1: Video Autoplay
     AFRAME.registerComponent('play-on-click', {
       init: function () {
         const sceneEl = this.el.sceneEl;
@@ -19,7 +17,6 @@
           window.addEventListener('click', () => {
             const v1 = document.querySelector('#mainVideoPlayer');
             if (v1 && v1.paused) {
-              // Just play the video that is already loaded
               v1.play()
                 .then(() => console.log("Video started"))
                 .catch((e) => console.warn("Video failed:", e));
@@ -28,10 +25,58 @@
         });
       }
     });
+
+    // COMPONENT 2: VR GUI INTERACTION
+    AFRAME.registerComponent('gui-interact', {
+      schema: {
+        action: {type: 'string'},
+        param: {type: 'string'}
+      },
+      init: function () {
+        var el = this.el;
+        var data = this.data;
+        
+        el.addEventListener('mouseenter', function () {
+          el.setAttribute('material', 'color', '#777'); 
+          el.setAttribute('scale', '1.1 1.1 1.1');
+        });
+        
+        el.addEventListener('mouseleave', function () {
+          el.setAttribute('material', 'color', '#444'); 
+          el.setAttribute('scale', '1 1 1');
+        });
+
+        el.addEventListener('click', function () {
+          if (window[data.action]) {
+            console.log("VR Click:", data.action, data.param);
+            window[data.action](data.param);
+          }
+        });
+      }
+    });
+
+    // COMPONENT 3: MODE SWITCHER
+    AFRAME.registerComponent('mode-switcher', {
+      init: function () {
+        var scene = this.el;
+        var vrMenu = document.querySelector('#vr-menu-hud');
+        var htmlOverlays = document.querySelectorAll('.desktop-ui');
+
+        scene.addEventListener('enter-vr', function () {
+          htmlOverlays.forEach(el => el.style.display = 'none');
+          if (vrMenu) vrMenu.setAttribute('visible', true);
+        });
+
+        scene.addEventListener('exit-vr', function () {
+          htmlOverlays.forEach(el => el.style.display = 'flex');
+          if (vrMenu) vrMenu.setAttribute('visible', false);
+        });
+      }
+    });
   </script>
 
 <script>
-  // SHADERS (Macular, Cataract, Glaucoma)
+  // SHADERS (Unchanged)
   AFRAME.registerShader('macular-shader', {
     schema: { time: {type: 'time', is: 'uniform'}, opacity: {type: 'number', is: 'uniform', default: 0.0} },
     vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -59,7 +104,7 @@
       uniform float opacity;
       void main() {
         if (opacity < 0.01) discard;
-        gl_FragColor = vec4(0.62, 0.575, 0.45, 0.77); 
+        gl_FragColor = vec4(1.0, 0.98, 0.9, opacity); 
       }
     `
   });
@@ -72,7 +117,7 @@
       void main() {
         if (opacity < 0.01) discard;
         float dist = distance(vUv, vec2(0.5));
-        float vignette = smoothstep(0.001, 0.27, dist);
+        float vignette = smoothstep(0.15, 0.35, dist);
         gl_FragColor = vec4(0.0, 0.0, 0.0, vignette * opacity);
       }
     `
@@ -82,7 +127,7 @@
 </head>
 
 <body>
-  <a-scene shadow="type: pcfsoft" play-on-click>
+  <a-scene shadow="type: pcfsoft" play-on-click mode-switcher>
     <a-assets>
       <video id="mainVideoPlayer" src="assets/Forbesavecrosswalk360.mp4" 
              preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous">
@@ -94,8 +139,13 @@
     <a-videosphere src="#mainVideoPlayer"></a-videosphere>
 
     <a-entity id="playerRig" position="0 0 0" wasd-controls>
+      
+      <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .clickable; far: 5"></a-entity>
+      <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .clickable; far: 5"></a-entity>
+
       <a-camera id="playerCamera" position="0 2 0" look-controls>
-        <a-cursor raycaster="objects: [data-clickable]"></a-cursor>
+        
+        <a-cursor color="white" scale="0.5 0.5 0.5" raycaster="objects: .clickable"></a-cursor>
 
         <a-entity id="filter-macular" geometry="primitive: plane; height: 0.4; width: 0.4" position="0 0 -0.1"
           material="shader: macular-shader; transparent: true; depthTest: false; opacity: 0.0"></a-entity>
@@ -106,29 +156,94 @@
 
         <a-plane id="filter-retinopathy" 
                  src="#retinopathy-img"
+                 geometry="height: 0.4; width: 0.4" 
                  position="0 0 -0.1" 
-                 height="0.4" width="0.4"
-                 transparent="true"
-                 depthTest="false"
+                 transparent="true" 
+                 depthTest="false" 
                  opacity="0">
         </a-plane>
 
       </a-camera>
-    </a-entity>
+
+      <a-entity id="vr-menu-hud" position="0 1.6 -2.5" visible="false">
+          
+          <a-entity position="0 0.4 0">
+              <a-plane color="#000" opacity="0.4" width="3.2" height="0.4" position="0 0 -0.01"></a-plane>
+              
+              <a-plane class="clickable" position="-1.2 0 0" width="0.7" height="0.25" 
+                       material="shader: flat; color: #444"
+                       gui-interact="action: switchVideo; param: Forbesavecrosswalk360.mp4">
+                  <a-text value="Crosswalk" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+              </a-plane>
+
+              <a-plane class="clickable" position="-0.4 0 0" width="0.7" height="0.25" 
+                       material="shader: flat; color: #444"
+                       gui-interact="action: switchVideo; param: AnnexToSalk.mp4">
+                  <a-text value="Salk Annex" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+              </a-plane>
+
+              <a-plane class="clickable" position="0.4 0 0" width="0.7" height="0.25" 
+                       material="shader: flat; color: #444"
+                       gui-interact="action: switchVideo; param: RecCenterToAnnex.mp4">
+                  <a-text value="Terrace St" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+              </a-plane>
+
+              <a-plane class="clickable" position="1.2 0 0" width="0.7" height="0.25" 
+                       material="shader: flat; color: #444"
+                       gui-interact="action: switchVideo; param: ScaifeInterior.mp4">
+                  <a-text value="Scaife Int" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+              </a-plane>
+          </a-entity>
+
+          <a-entity position="0 -0.4 0">
+               <a-plane color="#000" opacity="0.4" width="4.0" height="0.4" position="0 0 -0.01"></a-plane>
+
+               <a-plane class="clickable" position="-1.5 0 0" width="0.6" height="0.25" 
+                        material="shader: flat; color: #444"
+                        gui-interact="action: toggleFilter; param: none">
+                   <a-text value="Normal" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+               </a-plane>
+
+               <a-plane class="clickable" position="-0.75 0 0" width="0.6" height="0.25" 
+                        material="shader: flat; color: #444"
+                        gui-interact="action: toggleFilter; param: macular">
+                   <a-text value="Macular" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+               </a-plane>
+
+               <a-plane class="clickable" position="0 0 0" width="0.6" height="0.25" 
+                        material="shader: flat; color: #444"
+                        gui-interact="action: toggleFilter; param: cataract">
+                   <a-text value="Cataracts" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+               </a-plane>
+
+               <a-plane class="clickable" position="0.75 0 0" width="0.6" height="0.25" 
+                        material="shader: flat; color: #444"
+                        gui-interact="action: toggleFilter; param: glaucoma">
+                   <a-text value="Glaucoma" align="center" color="white" wrap-count="12" width="2.8" position="0 0 0.06"></a-text>
+               </a-plane>
+
+               <a-plane class="clickable" position="1.5 0 0" width="0.6" height="0.25" 
+                        material="shader: flat; color: #444"
+                        gui-interact="action: toggleFilter; param: retinopathy">
+                   <a-text value="Retinopathy" align="center" color="white" wrap-count="10" width="2.6" position="0 0 0.06"></a-text>
+               </a-plane>
+          </a-entity>
+
+      </a-entity> </a-entity>
 
     <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#7BC8A4" shadow="receive: true" opacity="0"></a-plane>
     <a-light type="ambient" color="#888"></a-light>
     <a-light type="directional" position="-1 1 0.5" intensity="0.6" shadow="cast: true"></a-light>
   </a-scene>
 
-<div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
+  <div class="desktop-ui" style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
   <button onclick="switchVideo('Forbesavecrosswalk360.mp4')" style="padding: 8px 15px; cursor: pointer;">Crosswalk</button>
-  <button onclick="switchVideo('SalkToScaife.mp4')"      style="padding: 8px 15px; cursor: pointer;">Salk to Scaife</button>
+  <button onclick="switchVideo('AnnexToSalk.mp4')"      style="padding: 8px 15px; cursor: pointer;">Salk Annex</button>
   <button onclick="switchVideo('RecCenterToAnnex.mp4')"      style="padding: 8px 15px; cursor: pointer;">Terrace Street</button>
   <button onclick="switchVideo('ScaifeInterior.mp4')"     style="padding: 8px 15px; cursor: pointer;">Scaife Interior</button>
 </div>
 
-<div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
+<div class="desktop-ui" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;">
   <button onclick="toggleFilter('none')" style="padding: 8px 15px; cursor: pointer;">Normal</button>
   <button onclick="toggleFilter('macular')" style="padding: 8px 15px; cursor: pointer;">Macular</button>
   <button onclick="toggleFilter('cataract')" style="padding: 8px 15px; cursor: pointer;">Cataracts</button>
@@ -142,32 +257,29 @@
     filters.forEach(f => {
       document.querySelector('#filter-' + f).setAttribute('material', 'opacity', 0.0);
     });
+    document.querySelector('#filter-retinopathy').setAttribute('opacity', 0.0);
 
     if (type !== 'none') {
-      const activeFilter = document.querySelector('#filter-' + type);
-      // Set Opacity to 1.0 (Visible) for the selected filter
-      if (activeFilter) activeFilter.setAttribute('material', 'opacity', 1.0);
-      
-      // Keep your custom opacity tweaks if you want them:
-      if (type === 'cataract') activeFilter.setAttribute('material', 'opacity', 0.9);
+      if (type === 'retinopathy') {
+        document.querySelector('#filter-retinopathy').setAttribute('opacity', 1.0);
+      } else {
+        const activeFilter = document.querySelector('#filter-' + type);
+        if (activeFilter) activeFilter.setAttribute('material', 'opacity', 1.0);
+        if (type === 'cataract') activeFilter.setAttribute('material', 'opacity', 0.9);
+      }
     }
   }
 
   function switchVideo(filename) {
     var player = document.getElementById('mainVideoPlayer');
-    
-    // Check if we are already playing this video to avoid reset
     if (player.src.includes(filename)) {
         if (player.paused) player.play();
         return; 
     }
-
-    // Standard Switch Logic
     player.pause();
     player.src = 'assets/' + filename;
     player.load(); 
     player.play().catch(e => console.log("Play error:", e));
-    
     console.log("Switched video to:", filename);
   }
 </script>
